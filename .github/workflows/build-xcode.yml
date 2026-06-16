@@ -1,4 +1,4 @@
-name: Build iOS App (Xcode Project)
+name: Build iOS App
 
 on:
   workflow_dispatch:
@@ -9,17 +9,16 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-
     steps:
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Create Xcode Project and Source Files
+    - name: Create Xcode Project Structure
       run: |
-        mkdir ProximityApp
+        mkdir -p ProximityApp
         cd ProximityApp
 
-        # ViewController.swift
+        # Swift source files
         cat << 'EOF' > ViewController.swift
         import UIKit
 
@@ -31,7 +30,6 @@ jobs:
         }
         EOF
 
-        # AppDelegate.swift
         cat << 'EOF' > AppDelegate.swift
         import UIKit
 
@@ -72,7 +70,6 @@ jobs:
         # Storyboards
         mkdir -p Base.lproj
 
-        # Main.storyboard
         cat << 'EOF' > Base.lproj/Main.storyboard
         <?xml version="1.0" encoding="UTF-8"?>
         <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB"
@@ -93,7 +90,6 @@ jobs:
         </document>
         EOF
 
-        # LaunchScreen.storyboard
         cat << 'EOF' > Base.lproj/LaunchScreen.storyboard
         <?xml version="1.0" encoding="UTF-8"?>
         <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB"
@@ -114,26 +110,32 @@ jobs:
         </document>
         EOF
 
-        # Create Xcode project
-        xcodebuild -create-xcodeproj -project ProximityApp.xcodeproj \
-          -target ProximityApp -type app \
-          -sources ViewController.swift AppDelegate.swift \
-          -plist Info.plist \
-          -resources Base.lproj
+        # Create Xcode project folder
+        mkdir -p ProximityApp.xcodeproj
+        cat << 'EOF' > ProximityApp.xcodeproj/project.pbxproj
+        // Minimal pbxproj generated for GitHub Actions build
+        {
+          archiveVersion = 1;
+          classes = {};
+          objectVersion = 56;
+          objects = {};
+          rootObject = 1;
+        }
+        EOF
 
     - name: Build App
       run: |
         xcodebuild -project ProximityApp/ProximityApp.xcodeproj \
-          -scheme ProximityApp -sdk iphoneos -configuration Release build
+          -sdk iphoneos -configuration Release build
 
     - name: Package IPA
       run: |
         mkdir Payload
         cp -R ProximityApp/build/Release-iphoneos/ProximityApp.app Payload/
-        zip -r ProximityApp-Xcode.ipa Payload
+        zip -r ProximityApp.ipa Payload
 
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
-        name: ProximityApp-Xcode
-        path: ProximityApp-Xcode.ipa
+        name: ProximityApp
+        path: ProximityApp.ipa
